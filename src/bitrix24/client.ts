@@ -107,6 +107,28 @@ export interface BitrixCompany {
   DATE_MODIFY?: string;
 }
 
+export interface BitrixQuote {
+  ID?: string;
+  TITLE?: string;
+  STATUS_ID?: string;
+  OPPORTUNITY?: string;
+  CURRENCY_ID?: string;
+  CONTACT_ID?: string;
+  COMPANY_ID?: string;
+  DEAL_ID?: string;
+  LEAD_ID?: string;
+  CONTENT?: string;
+  TERMS?: string;
+  COMMENTS?: string;
+  BEGINDATE?: string;
+  CLOSEDATE?: string;
+  ASSIGNED_BY_ID?: string;
+  CREATED_BY_ID?: string;
+  MODIFY_BY_ID?: string;
+  DATE_CREATE?: string;
+  DATE_MODIFY?: string;
+}
+
 export class Bitrix24Client {
   private baseUrl: string;
   private requestCount = 0;
@@ -183,6 +205,19 @@ export class Bitrix24Client {
             // Handle filter parameter specially
             Object.entries(value).forEach(([filterKey, filterValue]) => {
               body.append(`filter[${filterKey}]`, String(filterValue));
+            });
+          } else if (key === 'rows' && Array.isArray(value)) {
+            // Handle rows parameter for product rows - Bitrix24 expects rows[0][FIELD]=value format
+            value.forEach((row: Record<string, any>, index: number) => {
+              Object.entries(row).forEach(([rowKey, rowValue]) => {
+                if (rowValue !== undefined && rowValue !== null) {
+                  body.append(`rows[${index}][${rowKey}]`, String(rowValue));
+                }
+              });
+            });
+          } else if (key === 'select' && Array.isArray(value)) {
+            value.forEach((item: string, index: number) => {
+              body.append(`select[${index}]`, item);
             });
           } else if (typeof value === 'object' && value !== null) {
             body.append(key, JSON.stringify(value));
@@ -435,6 +470,66 @@ export class Bitrix24Client {
     });
     
     return sortedCompanies.slice(0, limit);
+  }
+
+  // CRM Quote Methods (using crm.item.* API with entityTypeId=7)
+  async createQuote(quote: BitrixQuote): Promise<string> {
+    const result = await this.makeRequest('crm.item.add', { entityTypeId: 7, fields: quote });
+    return result.item?.id?.toString() || result.toString();
+  }
+
+  async getQuote(id: string): Promise<any> {
+    const result = await this.makeRequest('crm.item.get', { entityTypeId: 7, id });
+    return result.item || result;
+  }
+
+  async updateQuote(id: string, quote: Partial<BitrixQuote>): Promise<boolean> {
+    const result = await this.makeRequest('crm.item.update', { entityTypeId: 7, id, fields: quote });
+    return result?.item !== undefined || result === true;
+  }
+
+  async listQuotes(params: {
+    start?: number;
+    filter?: Record<string, any>;
+    order?: Record<string, string>;
+    select?: string[];
+  } = {}): Promise<any[]> {
+    const result = await this.makeRequest('crm.item.list', { entityTypeId: 7, ...params });
+    return result.items || result;
+  }
+
+  async setQuoteProductRows(quoteId: string, rows: Array<{
+    PRODUCT_NAME: string;
+    PRICE: number;
+    QUANTITY: number;
+    DISCOUNT_TYPE_ID?: number;
+    DISCOUNT_RATE?: number;
+    DISCOUNT_SUM?: number;
+    TAX_RATE?: number;
+    TAX_INCLUDED?: string;
+    MEASURE_CODE?: number;
+    MEASURE_NAME?: string;
+  }>): Promise<boolean> {
+    const result = await this.makeRequest('crm.quote.productrows.set', {
+      id: quoteId,
+      rows
+    });
+    return result === true;
+  }
+
+  async getQuoteProductRows(quoteId: string): Promise<any[]> {
+    return await this.makeRequest('crm.quote.productrows.get', { id: quoteId });
+  }
+
+  async getLatestQuotes(limit: number = 20): Promise<any[]> {
+    const result = await this.makeRequest('crm.item.list', {
+      entityTypeId: 7,
+      order: { 'createdTime': 'DESC' },
+      select: ['*']
+    });
+
+    const items = result.items || result;
+    return items.slice(0, limit);
   }
 
   // Deal Pipeline and Stage Methods

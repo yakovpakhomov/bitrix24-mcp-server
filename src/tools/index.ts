@@ -1,5 +1,5 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import { bitrix24Client, BitrixContact, BitrixDeal, BitrixTask, BitrixLead, BitrixCompany } from '../bitrix24/client.js';
+import { bitrix24Client, BitrixContact, BitrixDeal, BitrixTask, BitrixLead, BitrixCompany, BitrixQuote } from '../bitrix24/client.js';
 
 // Contact Management Tools
 export const createContactTool: Tool = {
@@ -382,6 +382,145 @@ export const getCompaniesFromDateRangeTool: Tool = {
       limit: { type: 'number', description: 'Maximum number of companies to return', default: 50 }
     },
     required: ['startDate']
+  }
+};
+
+// Quote Management Tools
+export const createQuoteTool: Tool = {
+  name: 'bitrix24_create_quote',
+  description: 'Create a new quote/commercial proposal in Bitrix24 CRM',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      title: { type: 'string', description: 'Quote title' },
+      opportunity: { type: 'string', description: 'Quote amount' },
+      currency: { type: 'string', description: 'Currency code (e.g., EUR, USD)', default: 'EUR' },
+      contactId: { type: 'string', description: 'Associated contact ID' },
+      companyId: { type: 'string', description: 'Associated company ID' },
+      dealId: { type: 'string', description: 'Associated deal ID' },
+      leadId: { type: 'string', description: 'Associated lead ID' },
+      statusId: { type: 'string', description: 'Quote status ID' },
+      content: { type: 'string', description: 'Quote content/description' },
+      terms: { type: 'string', description: 'Quote terms and conditions' },
+      comments: { type: 'string', description: 'Additional comments' },
+      begindate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+      closedate: { type: 'string', description: 'Close date (YYYY-MM-DD)' }
+    },
+    required: ['title']
+  }
+};
+
+export const getQuoteTool: Tool = {
+  name: 'bitrix24_get_quote',
+  description: 'Retrieve quote/commercial proposal information by ID',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'Quote ID' }
+    },
+    required: ['id']
+  }
+};
+
+export const listQuotesTool: Tool = {
+  name: 'bitrix24_list_quotes',
+  description: 'List quotes/commercial proposals with optional filtering',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      limit: { type: 'number', description: 'Maximum number of quotes to return', default: 20 },
+      filter: { type: 'object', description: 'Filter criteria (e.g., {"STATUS_ID": "APPROVED"})' },
+      orderBy: {
+        type: 'string',
+        enum: ['DATE_CREATE', 'DATE_MODIFY', 'ID', 'TITLE', 'OPPORTUNITY'],
+        description: 'Field to order by',
+        default: 'DATE_CREATE'
+      },
+      orderDirection: {
+        type: 'string',
+        enum: ['ASC', 'DESC'],
+        description: 'Order direction',
+        default: 'DESC'
+      }
+    }
+  }
+};
+
+export const getLatestQuotesTool: Tool = {
+  name: 'bitrix24_get_latest_quotes',
+  description: 'Get the most recent quotes/commercial proposals ordered by creation date',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      limit: { type: 'number', description: 'Maximum number of quotes to return', default: 20 }
+    }
+  }
+};
+
+export const updateQuoteTool: Tool = {
+  name: 'bitrix24_update_quote',
+  description: 'Update an existing quote/commercial proposal in Bitrix24 CRM',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'Quote ID' },
+      title: { type: 'string', description: 'Quote title' },
+      opportunity: { type: 'string', description: 'Quote amount' },
+      currency: { type: 'string', description: 'Currency code (e.g., EUR, USD)' },
+      contactId: { type: 'string', description: 'Associated contact ID' },
+      companyId: { type: 'string', description: 'Associated company ID' },
+      dealId: { type: 'string', description: 'Associated deal ID' },
+      leadId: { type: 'string', description: 'Associated lead ID' },
+      statusId: { type: 'string', description: 'Quote status ID' },
+      content: { type: 'string', description: 'Quote content/description' },
+      terms: { type: 'string', description: 'Quote terms and conditions' },
+      comments: { type: 'string', description: 'Additional comments' },
+      begindate: { type: 'string', description: 'Start date (YYYY-MM-DD)' },
+      closedate: { type: 'string', description: 'Close date (YYYY-MM-DD)' }
+    },
+    required: ['id']
+  }
+};
+
+export const setQuoteProductRowsTool: Tool = {
+  name: 'bitrix24_set_quote_product_rows',
+  description: 'Set product rows (товарные позиции) for a quote/commercial proposal in Bitrix24 CRM. Replaces all existing product rows.',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      quoteId: { type: 'string', description: 'Quote ID' },
+      rows: {
+        type: 'array',
+        description: 'Array of product rows',
+        items: {
+          type: 'object',
+          properties: {
+            productName: { type: 'string', description: 'Product/service name' },
+            price: { type: 'number', description: 'Price per unit' },
+            quantity: { type: 'number', description: 'Quantity', default: 1 },
+            discountRate: { type: 'number', description: 'Discount percentage' },
+            discountSum: { type: 'number', description: 'Discount amount' },
+            taxRate: { type: 'number', description: 'Tax/VAT rate percentage' },
+            taxIncluded: { type: 'string', enum: ['Y', 'N'], description: 'Whether tax is included in price', default: 'Y' },
+            measureName: { type: 'string', description: 'Unit of measure (e.g., шт., усл., час)' }
+          },
+          required: ['productName', 'price']
+        }
+      }
+    },
+    required: ['quoteId', 'rows']
+  }
+};
+
+export const getQuoteProductRowsTool: Tool = {
+  name: 'bitrix24_get_quote_product_rows',
+  description: 'Get product rows (товарные позиции) for a quote/commercial proposal',
+  inputSchema: {
+    type: 'object',
+    properties: {
+      quoteId: { type: 'string', description: 'Quote ID' }
+    },
+    required: ['quoteId']
   }
 };
 
@@ -937,6 +1076,13 @@ export const allTools = [
   updateCompanyTool,
   getLatestCompaniesTool,
   getCompaniesFromDateRangeTool,
+  createQuoteTool,
+  getQuoteTool,
+  listQuotesTool,
+  getLatestQuotesTool,
+  updateQuoteTool,
+  setQuoteProductRowsTool,
+  getQuoteProductRowsTool,
   searchCRMTool,
   validateWebhookTool,
   diagnosePermissionsTool,
@@ -1189,6 +1335,82 @@ export async function executeToolCall(name: string, args: any): Promise<any> {
           args.limit || 50
         );
         return { success: true, companies: dateRangeCompanies };
+
+      case 'bitrix24_create_quote':
+        const quote: BitrixQuote = {
+          TITLE: args.title,
+          OPPORTUNITY: args.opportunity,
+          CURRENCY_ID: args.currency || 'EUR',
+          CONTACT_ID: args.contactId,
+          COMPANY_ID: args.companyId,
+          DEAL_ID: args.dealId,
+          LEAD_ID: args.leadId,
+          STATUS_ID: args.statusId,
+          CONTENT: args.content,
+          TERMS: args.terms,
+          COMMENTS: args.comments,
+          BEGINDATE: args.begindate,
+          CLOSEDATE: args.closedate
+        };
+        const quoteId = await bitrix24Client.createQuote(quote);
+        return { success: true, quoteId, message: `Quote created with ID: ${quoteId}` };
+
+      case 'bitrix24_get_quote':
+        const quoteData = await bitrix24Client.getQuote(args.id);
+        return { success: true, quote: quoteData };
+
+      case 'bitrix24_list_quotes':
+        const quoteOrder: Record<string, string> = {};
+        quoteOrder[args.orderBy || 'DATE_CREATE'] = args.orderDirection || 'DESC';
+
+        const quotes = await bitrix24Client.listQuotes({
+          start: 0,
+          filter: args.filter,
+          order: quoteOrder,
+          select: ['*']
+        });
+        return { success: true, quotes: quotes.slice(0, args.limit || 20) };
+
+      case 'bitrix24_get_latest_quotes':
+        const latestQuotes = await bitrix24Client.getLatestQuotes(args.limit || 20);
+        return { success: true, quotes: latestQuotes };
+
+      case 'bitrix24_update_quote':
+        const updateQuote: Partial<BitrixQuote> = {};
+        if (args.title) updateQuote.TITLE = args.title;
+        if (args.opportunity) updateQuote.OPPORTUNITY = args.opportunity;
+        if (args.currency) updateQuote.CURRENCY_ID = args.currency;
+        if (args.contactId) updateQuote.CONTACT_ID = args.contactId;
+        if (args.companyId) updateQuote.COMPANY_ID = args.companyId;
+        if (args.dealId) updateQuote.DEAL_ID = args.dealId;
+        if (args.leadId) updateQuote.LEAD_ID = args.leadId;
+        if (args.statusId) updateQuote.STATUS_ID = args.statusId;
+        if (args.content) updateQuote.CONTENT = args.content;
+        if (args.terms) updateQuote.TERMS = args.terms;
+        if (args.comments) updateQuote.COMMENTS = args.comments;
+        if (args.begindate) updateQuote.BEGINDATE = args.begindate;
+        if (args.closedate) updateQuote.CLOSEDATE = args.closedate;
+
+        const quoteUpdated = await bitrix24Client.updateQuote(args.id, updateQuote);
+        return { success: true, updated: quoteUpdated, message: `Quote ${args.id} updated successfully` };
+
+      case 'bitrix24_set_quote_product_rows':
+        const productRows = args.rows.map((row: any) => ({
+          PRODUCT_NAME: row.productName,
+          PRICE: row.price,
+          QUANTITY: row.quantity || 1,
+          DISCOUNT_RATE: row.discountRate,
+          DISCOUNT_SUM: row.discountSum,
+          TAX_RATE: row.taxRate,
+          TAX_INCLUDED: row.taxIncluded || 'Y',
+          MEASURE_NAME: row.measureName
+        }));
+        const rowsSet = await bitrix24Client.setQuoteProductRows(args.quoteId, productRows);
+        return { success: true, updated: rowsSet, message: `Product rows set for quote ${args.quoteId}` };
+
+      case 'bitrix24_get_quote_product_rows':
+        const existingRows = await bitrix24Client.getQuoteProductRows(args.quoteId);
+        return { success: true, rows: existingRows };
 
       case 'bitrix24_search_crm':
         const searchResults = await bitrix24Client.searchCRM(args.query, args.entityTypes);
